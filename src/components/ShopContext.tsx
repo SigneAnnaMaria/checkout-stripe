@@ -1,15 +1,33 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from 'react'
 
-interface Product {
+export interface Product {
   id: string
   name: string
   description: string
-  price: number
+  images: string[]
+  priceId: string
+  default_price: {
+    id: string
+    unit_amount: number
+    currency: string
+  }
 }
 
-interface CartItem {
+export interface CartItem {
   productId: string
   quantity: number
+  priceId: string
+  name: string
+  default_price: {
+    unit_amount: number
+    currency: string
+  }
 }
 
 interface User {
@@ -24,7 +42,8 @@ interface ShopContextType {
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string) => void
   registerUser: (user: User) => void
-  loginUser: (email: string, password: string) => boolean
+  loginUser: (email: string, password: string) => Promise<boolean>
+  handleCheckoutSuccess: () => Promise<void>
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined)
@@ -40,19 +59,43 @@ export const useShop = () => {
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [currentUser, setCurrentUser] = useState<string | null>(null)
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [users, setUsers] = useState<User[]>([])
+  const [currentUser, setCurrentUser] = useState<string | null>(() => {
+    const savedUser = localStorage.getItem('currentUser')
+    return savedUser ? JSON.parse(savedUser) : null
+  })
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const savedCart = localStorage.getItem('cartItems')
+    return savedCart ? JSON.parse(savedCart) : []
+  })
 
-  const addToCart = (item: CartItem) => {
+  useEffect(() => {
+    if (currentUser !== null) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser))
+    } else {
+      localStorage.removeItem('currentUser')
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    localStorage.setItem('cartItems', JSON.stringify(cartItems))
+  }, [cartItems])
+
+  const addToCart = (newItem: CartItem) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((i) => i.productId === item.productId)
-      if (existingItem) {
-        return prevItems.map((i) =>
-          i.productId === item.productId ? { ...i, quantity: item.quantity } : i
+      console.log('newItem', newItem)
+      const existingItemIndex = prevItems.findIndex(
+        (i) => i.productId === newItem.productId
+      )
+
+      if (existingItemIndex > -1) {
+        return prevItems.map((item, index) =>
+          index === existingItemIndex
+            ? { ...item, quantity: newItem.quantity, priceId: newItem.priceId }
+            : item
         )
+      } else {
+        return [...prevItems, newItem]
       }
-      return [...prevItems, item]
     })
   }
 
@@ -62,19 +105,68 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
     )
   }
 
-  const registerUser = (user: User) => {
-    setUsers((prevUsers) => [...prevUsers, user])
+  const registerUser = async (user: User) => {
+    try {
+      const response = await fetch('http://localhost:3001/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user),
+      })
+      if (response.ok) {
+        console.log('Registration successful')
+      } else {
+        console.error('Registration failed')
+      }
+    } catch (error) {
+      console.error('Error during registration: ', error)
+    }
   }
 
-  const loginUser = (email: string, password: string) => {
-    const foundUser = users.find(
-      (user) => user.email === email && user.password === password
-    )
-    if (foundUser) {
-      setCurrentUser(foundUser.email)
-      return true
+  const loginUser = async (email: string, password: string) => {
+    try {
+      const response = await fetch('http://localhost:3001/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      if (response.ok) {
+        setCurrentUser(email)
+        return true
+      } else {
+        console.error('Login failed')
+        return false
+      }
+    } catch (error) {
+      console.error('Error during login: ', error)
+      return false
     }
-    return false
+  }
+
+  const handleCheckoutSuccess = async () => {
+    console.log('handleCheckoutSuccess is running for user: ', currentUser)
+    if (!currentUser) {
+      console.error('No current user for checkout')
+      return
+    }
+
+    const orderDetails = {
+      user: currentUser,
+      items: cartItems,
+    }
+    console.log('handleCheckoutSuccess, orderDetails', orderDetails)
+    try {
+      await fetch('http://localhost:3001/confirm-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderDetails),
+      })
+
+      setCartItems([])
+    } catch (error) {
+      console.error('Error confirming order: ', error)
+    }
   }
 
   return (
@@ -87,6 +179,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
         removeFromCart,
         registerUser,
         loginUser,
+        handleCheckoutSuccess,
       }}
     >
       {children}

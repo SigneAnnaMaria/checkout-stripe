@@ -7,10 +7,14 @@ const Register: React.FC = () => {
   const [message, setMessage] = useState('')
   const { registerUser } = useShop()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    registerUser({ email, password })
-    setMessage('Registration successful')
+    try {
+      await registerUser({ email, password })
+      setMessage('Registration successful')
+    } catch (error) {
+      setMessage('Registration failed')
+    }
   }
 
   return (

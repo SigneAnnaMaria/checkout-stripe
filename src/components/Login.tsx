@@ -7,9 +7,9 @@ const Login: React.FC = () => {
   const [message, setMessage] = useState('')
   const { loginUser } = useShop()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const success = loginUser(email, password)
+    const success = await loginUser(email, password)
     if (success) {
       setMessage('Login successful')
     } else {

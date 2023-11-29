@@ -1,16 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { useShop } from './ShopContext'
-
-interface Product {
-  id: string
-  name: string
-  description: string
-  images: string[]
-  default_price: {
-    unit_amount: number
-    currency: string
-  }
-}
+import { useShop, Product } from './ShopContext'
+import formatPrice from './utils'
 
 const ProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([])
@@ -19,27 +9,28 @@ const ProductsPage: React.FC = () => {
   useEffect(() => {
     fetch('http://localhost:3001/products')
       .then((response) => response.json())
-      .then((data) => setProducts(data.data))
+      .then((data) => {
+        setProducts(data.data)
+      })
       .catch((error) => console.error(error))
   }, [])
 
-  const formatPrice = (priceInCents: number) => {
-    return (priceInCents / 100).toLocaleString('sv-SE', {
-      style: 'currency',
-      currency: 'SEK',
-    })
-  }
-
-  const handleAddToCart = (productId: string) => {
+  const handleAddToCart = (product: Product) => {
     const existingCartItem = cartItems.find(
-      (item) => item.productId === productId
+      (item) => item.productId === product.id
     )
+    const quantityToAdd = existingCartItem ? existingCartItem.quantity + 1 : 1
 
-    if (existingCartItem) {
-      addToCart({ productId, quantity: existingCartItem.quantity + 1 })
-    } else {
-      addToCart({ productId, quantity: 1 })
-    }
+    addToCart({
+      productId: product.id,
+      quantity: quantityToAdd,
+      priceId: product.default_price.id,
+      name: product.name,
+      default_price: {
+        unit_amount: product.default_price.unit_amount,
+        currency: product.default_price.currency,
+      },
+    })
   }
 
   return (
@@ -55,11 +46,13 @@ const ProductsPage: React.FC = () => {
             )}
             {product.default_price && (
               <p>
-                {formatPrice(product.default_price.unit_amount)}{' '}
-                {product.default_price.currency.toUpperCase()}
+                {formatPrice(
+                  product.default_price.unit_amount,
+                  product.default_price.currency
+                )}{' '}
               </p>
             )}
-            <button onClick={() => handleAddToCart(product.id)}>
+            <button onClick={() => handleAddToCart(product)}>
               Add to Cart
             </button>
           </li>
