@@ -30,7 +30,7 @@ export interface CartItem {
   }
 }
 
-interface User {
+export interface User {
   email: string
   password: string
 }
@@ -41,9 +41,15 @@ interface ShopContextType {
   cartItems: CartItem[]
   addToCart: (item: CartItem) => void
   removeFromCart: (productId: string) => void
-  registerUser: (user: User) => void
+  registerUser: (user: User) => Promise<RegistrationResult>
   loginUser: (email: string, password: string) => Promise<boolean>
   handleCheckoutSuccess: () => Promise<void>
+  logoutUser: () => void
+}
+
+export interface RegistrationResult {
+  success: boolean
+  message: string
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined)
@@ -105,20 +111,26 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
     )
   }
 
-  const registerUser = async (user: User) => {
+  const registerUser = async (user: User): Promise<RegistrationResult> => {
     try {
       const response = await fetch('http://localhost:3001/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user),
       })
+
       if (response.ok) {
-        console.log('Registration successful')
+        return { success: true, message: 'Registration successful' }
+      } else if (response.status === 409) {
+        return {
+          success: false,
+          message: 'User already exists with this email',
+        }
       } else {
-        console.error('Registration failed')
+        return { success: false, message: 'Registration failed' }
       }
     } catch (error) {
-      console.error('Error during registration: ', error)
+      return { success: false, message: 'Registration failed due to an error' }
     }
   }
 
@@ -140,6 +152,11 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
       console.error('Error during login: ', error)
       return false
     }
+  }
+
+  const logoutUser = () => {
+    setCurrentUser(null)
+    localStorage.removeItem('currentUser')
   }
 
   const handleCheckoutSuccess = async () => {
@@ -180,6 +197,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
         registerUser,
         loginUser,
         handleCheckoutSuccess,
+        logoutUser,
       }}
     >
       {children}

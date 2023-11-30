@@ -4,12 +4,16 @@ import './index.css'
 import App from './App'
 import reportWebVitals from './reportWebVitals'
 import { ShopProvider } from './components/ShopContext'
+import { BrowserRouter as Router } from 'react-router-dom'
+import 'bootstrap/dist/css/bootstrap.min.css'
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   // <React.StrictMode>
   <ShopProvider>
-    <App />
+    <Router>
+      <App />
+    </Router>
   </ShopProvider>
   // </React.StrictMode>
 )

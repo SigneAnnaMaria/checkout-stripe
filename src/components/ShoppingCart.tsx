@@ -39,6 +39,7 @@ const ShoppingCart: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userEmail: currentUser,
           items: cartItems.map((item) => ({
             priceId: item.priceId,
             quantity: item.quantity,

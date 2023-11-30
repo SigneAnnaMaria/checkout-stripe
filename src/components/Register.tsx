@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useShop } from './ShopContext'
+import { useShop, RegistrationResult } from './ShopContext'
 
 const Register: React.FC = () => {
   const [email, setEmail] = useState('')
@@ -9,12 +9,9 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    try {
-      await registerUser({ email, password })
-      setMessage('Registration successful')
-    } catch (error) {
-      setMessage('Registration failed')
-    }
+
+    const result: RegistrationResult = await registerUser({ email, password })
+    setMessage(result.message)
   }
 
   return (
