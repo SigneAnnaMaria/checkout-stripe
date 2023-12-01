@@ -23,6 +23,7 @@ export interface CartItem {
   productId: string
   quantity: number
   priceId: string
+  images: string[]
   name: string
   default_price: {
     unit_amount: number
@@ -40,6 +41,7 @@ interface ShopContextType {
   setCurrentUser: (user: string | null) => void
   cartItems: CartItem[]
   addToCart: (item: CartItem) => void
+  itemCount: number
   removeFromCart: (productId: string) => void
   registerUser: (user: User) => Promise<RegistrationResult>
   loginUser: (email: string, password: string) => Promise<boolean>
@@ -73,6 +75,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
     const savedCart = localStorage.getItem('cartItems')
     return savedCart ? JSON.parse(savedCart) : []
   })
+  const [itemCount, setItemCount] = useState(0)
 
   useEffect(() => {
     if (currentUser !== null) {
@@ -81,7 +84,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
       localStorage.removeItem('currentUser')
     }
   }, [currentUser])
-
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems))
   }, [cartItems])
@@ -92,7 +94,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
       const existingItemIndex = prevItems.findIndex(
         (i) => i.productId === newItem.productId
       )
-
+      setItemCount((prevCount) => prevCount + 1)
       if (existingItemIndex > -1) {
         return prevItems.map((item, index) =>
           index === existingItemIndex
@@ -106,9 +108,11 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
   }
 
   const removeFromCart = (productId: string) => {
-    setCartItems((prevItems) =>
-      prevItems.filter((item) => item.productId !== productId)
+    const newCartItems = cartItems.filter(
+      (item) => item.productId !== productId
     )
+    setItemCount(newCartItems.length)
+    setCartItems(newCartItems)
   }
 
   const registerUser = async (user: User): Promise<RegistrationResult> => {
@@ -120,6 +124,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
       })
 
       if (response.ok) {
+        loginUser(user.email, user.password)
         return { success: true, message: 'Registration successful' }
       } else if (response.status === 409) {
         return {
@@ -179,8 +184,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
         },
         body: JSON.stringify(orderDetails),
       })
-
       setCartItems([])
+      setItemCount(0)
     } catch (error) {
       console.error('Error confirming order: ', error)
     }
@@ -193,6 +198,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({
         setCurrentUser,
         cartItems,
         addToCart,
+        itemCount,
         removeFromCart,
         registerUser,
         loginUser,

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useShop, Product } from './ShopContext'
 import formatPrice from './utils'
+import { Card, Button, Row, Col, Container, Alert } from 'react-bootstrap'
 
 const ProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([])
+  const [showSnackbar, setShowSnackbar] = useState(false)
   const { addToCart, cartItems } = useShop()
 
   useEffect(() => {
@@ -25,40 +27,59 @@ const ProductsPage: React.FC = () => {
       productId: product.id,
       quantity: quantityToAdd,
       priceId: product.default_price.id,
+      images: product.images,
       name: product.name,
       default_price: {
         unit_amount: product.default_price.unit_amount,
         currency: product.default_price.currency,
       },
     })
+    setShowSnackbar(true)
+    setTimeout(() => setShowSnackbar(false), 3000)
   }
 
   return (
-    <div>
-      <h1>Products</h1>
-      <ul>
+    <Container>
+      <h1 className="text-center my-4">Products</h1>
+      {showSnackbar && (
+        <Alert variant="success" className="text-center">
+          Item added to cart!
+        </Alert>
+      )}
+      <Row xs={1} md={3} lg={4} xl={5} className="g-4">
         {products.map((product) => (
-          <li key={product.id}>
-            <h2>{product.name}</h2>
-            <p>{product.description}</p>
-            {product.images[0] && (
-              <img src={product.images[0]} alt={product.name} />
-            )}
-            {product.default_price && (
-              <p>
-                {formatPrice(
-                  product.default_price.unit_amount,
-                  product.default_price.currency
-                )}{' '}
-              </p>
-            )}
-            <button onClick={() => handleAddToCart(product)}>
-              Add to Cart
-            </button>
-          </li>
+          <Col key={product.id}>
+            <Card>
+              {product.images[0] && (
+                <Card.Img
+                  variant="top"
+                  src={product.images[0]}
+                  alt={product.name}
+                />
+              )}
+              <Card.Body>
+                <Card.Title>{product.name}</Card.Title>
+                <Card.Text>{product.description}</Card.Text>
+                {product.default_price && (
+                  <Card.Text>
+                    {formatPrice(
+                      product.default_price.unit_amount,
+                      product.default_price.currency
+                    )}
+                  </Card.Text>
+                )}
+                <Button
+                  variant="primary"
+                  onClick={() => handleAddToCart(product)}
+                >
+                  Add to Cart
+                </Button>
+              </Card.Body>
+            </Card>
+          </Col>
         ))}
-      </ul>
-    </div>
+      </Row>
+    </Container>
   )
 }
 

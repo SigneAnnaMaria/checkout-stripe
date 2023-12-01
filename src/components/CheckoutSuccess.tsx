@@ -1,19 +1,24 @@
 import React, { useEffect } from 'react'
 import { useShop } from './ShopContext'
+import { Container, Alert, Button } from 'react-bootstrap'
 
 const CheckoutSuccess: React.FC = () => {
   const { handleCheckoutSuccess } = useShop()
 
   useEffect(() => {
-    console.log('before handleCheckoutSuccess', handleCheckoutSuccess)
     handleCheckoutSuccess()
   }, [])
 
   return (
-    <div>
-      <h2>Checkout Successful</h2>
-      <p>Your order has been placed successfully.</p>
-    </div>
+    <Container>
+      <Alert variant="success">
+        <Alert.Heading>Checkout Successful</Alert.Heading>
+        <p>Your order has been placed successfully.</p>
+      </Alert>
+      <Button variant="primary" href="/products">
+        Back to Shop
+      </Button>
+    </Container>
   )
 }
 
